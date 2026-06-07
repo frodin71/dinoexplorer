@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DinoExplorer — El árbol de vida de los dinosaurios</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="nav">
+    <a href="#/" class="nav-logo">🦕 DinoExplorer</a>
+    <div class="nav-links">
+      <a href="#/" class="nav-link">Inicio</a>
+      <a href="#/explorar" class="nav-link">Explorar</a>
+    </div>
+    <button class="btn-icon" id="search-btn" aria-label="Buscar">🔍</button>
+  </nav>
+
+  <div id="search-overlay" class="search-overlay hidden">
+    <div class="search-box">
+      <input type="text" id="search-input" placeholder="Buscar dinosaurio..." autocomplete="off">
+      <button id="search-close" class="btn-icon">✕</button>
+    </div>
+    <div id="search-results" class="search-results"></div>
+  </div>
+
+  <main id="app"></main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
