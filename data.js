@@ -17,7 +17,23 @@ export const GRUPOS = {
     nombre: "Saurischia",
     descripcion: "Los saurisquios son uno de los dos grandes órdenes de dinosaurios, caracterizados originalmente por una pelvis con disposición similar a la de los lagartos. Incluyen a los gigantescos saurópodos y a todos los terópodos, incluidas las aves actuales.",
     padre: "dinosauria",
-    hijos: ["sauropodomorpha", "theropoda"]
+    hijos: ["eoraptoridae", "herrerasauridae", "sauropodomorpha", "theropoda"]
+  },
+
+  "eoraptoridae": {
+    id: "eoraptoridae",
+    nombre: "Eoraptoridae",
+    descripcion: "Familia de dinosaurios basales del Triásico tardío de América del Sur, representada por Eoraptor lunensis. Son considerados uno de los grupos más primitivos dentro de Dinosauria, con características mezcladas de carnívoros y herbívoros.",
+    padre: "saurischia",
+    hijos: []
+  },
+
+  "herrerasauridae": {
+    id: "herrerasauridae",
+    nombre: "Herrerasauridae",
+    descripcion: "Familia de dinosaurios depredadores basales del Triásico tardío de América del Sur. Los herrerasáuridos son uno de los grupos de dinosaurios carnívoros más antiguos conocidos, con una posición filogenética debatida entre los terópodos basales.",
+    padre: "saurischia",
+    hijos: []
   },
 
   "sauropodomorpha": {
