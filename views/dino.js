@@ -69,54 +69,93 @@ export function mount(container, id) {
 
 // ── Wikipedia gallery ────────────────────────────────────────────────────────
 
-const EXCLUDE = /icon|logo|flag|commons|wikidata|wikimedia|button|arrow|star|edit|pictogram|symbol|silhouette/i;
+// Applied only to filenames, not URLs (all WP image URLs contain "wikimedia")
+const EXCLUDE_TITLE = /icon|logo|flag|wikidata|button|arrow|star|edit|pictogram|symbol|silhouette|map|range|distribution|scale|comparison/i;
 
 async function fetchGallery(dino, container) {
   const slot = container.querySelector('#dino-image-slot');
   if (!slot) return;
 
-  const title = dino.nombre.replace(/ /g, '_');
-  const api = `https://en.wikipedia.org/w/api.php?action=query` +
-    `&generator=images&titles=${encodeURIComponent(title)}&gimlimit=30` +
-    `&prop=imageinfo&iiprop=url|mime|size|thumbmime&iiurlwidth=1200` +
-    `&format=json&origin=*`;
+  const wikiTitle = dino.nombre.replace(/ /g, '_');
+  const images = [];
 
+  // Step 1: REST summary API — featured image (isolated so failures don't kill it)
   try {
-    const res  = await fetch(api);
-    const data = await res.json();
-    const pages = Object.values(data.query?.pages || {});
-
-    const images = pages
-      .filter(p => p.imageinfo?.[0] && !EXCLUDE.test(p.title))
-      .map(p => ({ title: p.title.replace('File:', ''), ...p.imageinfo[0] }))
-      .filter(img =>
-        (img.mime === 'image/jpeg' || img.mime === 'image/png') &&
-        img.size > 20000
-      )
-      .slice(0, 8);
-
-    if (!images.length) return;
-
-    slot.innerHTML = `
-      <div class="gallery-header">
-        <span class="section-title">Galería de imágenes</span>
-        <span class="gallery-hint">Toca para ampliar</span>
-      </div>
-      <div class="dino-gallery">
-        ${images.map((img, i) => `
-          <figure class="dino-gallery-item ${i === 0 ? 'featured' : ''}"
-                  data-full="${img.url}"
-                  data-caption="${img.title}">
-            <img src="${img.thumburl || img.url}"
-                 alt="${img.title}" loading="lazy">
-          </figure>`).join('')}
-      </div>
-      <p class="gallery-credit">Imágenes vía Wikipedia · Wikimedia Commons</p>
-    `;
-
-    initLightbox(slot);
-
+    const res = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(wikiTitle)}`
+    );
+    const s = await res.json();
+    const url   = s.originalimage?.source || s.thumbnail?.source;
+    const thumb = s.thumbnail?.source;
+    if (url) images.push({ title: dino.nombre, url, thumburl: thumb || url });
   } catch (_) {}
+
+  // Steps 2+3: prop=images list → batch imageinfo for extra photos
+  try {
+    const listRes  = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query` +
+      `&titles=${encodeURIComponent(wikiTitle)}&prop=images&imlimit=50&redirects=1` +
+      `&format=json&origin=*`
+    );
+    const listData = await listRes.json();
+    const page     = Object.values(listData.query?.pages || {})[0];
+    const files    = (page?.images || [])
+      .map(img => img.title)
+      .filter(t => !EXCLUDE_TITLE.test(t));
+
+    if (files.length) {
+      const infoRes  = await fetch(
+        `https://en.wikipedia.org/w/api.php?action=query` +
+        `&titles=${files.slice(0, 20).map(encodeURIComponent).join('|')}` +
+        `&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=1200` +
+        `&format=json&origin=*`
+      );
+      const infoData = await infoRes.json();
+      const extras   = Object.values(infoData.query?.pages || {})
+        .filter(p => p.imageinfo?.[0]?.url)
+        .map(p => ({
+          title:    p.title.replace('File:', '').replace(/_/g, ' '),
+          url:      p.imageinfo[0].url,
+          thumburl: p.imageinfo[0].thumburl || p.imageinfo[0].url,
+          mime:     p.imageinfo[0].mime,
+          size:     p.imageinfo[0].size,
+        }))
+        .filter(img =>
+          (img.mime === 'image/jpeg' || img.mime === 'image/png') &&
+          img.size > 30000 &&
+          !EXCLUDE_TITLE.test(img.title)
+        );
+
+      // Deduplicate against featured image already in array
+      const featuredName = images[0]?.url.split('/').pop().split('?')[0] ?? '';
+      for (const img of extras) {
+        if (images.length >= 8) break;
+        if (featuredName && img.url.includes(featuredName)) continue;
+        images.push(img);
+      }
+    }
+  } catch (_) {}
+
+  if (!images.length) return;
+
+  slot.innerHTML = `
+    <div class="gallery-header">
+      <span class="section-title">Galería de imágenes</span>
+      <span class="gallery-hint">Toca para ampliar</span>
+    </div>
+    <div class="dino-gallery">
+      ${images.map((img, i) => `
+        <figure class="dino-gallery-item ${i === 0 ? 'featured' : ''}"
+                data-full="${img.url}"
+                data-caption="${img.title}">
+          <img src="${img.thumburl || img.url}"
+               alt="${img.title}" loading="lazy">
+        </figure>`).join('')}
+    </div>
+    <p class="gallery-credit">Imágenes vía Wikipedia · Wikimedia Commons</p>
+  `;
+
+  initLightbox(slot);
 }
 
 // ── Lightbox ─────────────────────────────────────────────────────────────────
