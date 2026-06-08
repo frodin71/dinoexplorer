@@ -14,7 +14,6 @@ export function mount(container, id) {
 
   const crumbs    = getBreadcrumb(dino.taxonomia.familia);
   const relatives = getDinosByFamilia(dino.taxonomia.familia).filter(d => d.id !== dino.id);
-
   const formatPeso = kg => kg >= 1000 ? (kg / 1000).toFixed(1) + ' t' : kg + ' kg';
 
   container.innerHTML = `
@@ -32,6 +31,8 @@ export function mount(container, id) {
         <span class="dino-tag">${dino.taxonomia.familia}</span>
       </div>
     </header>
+
+    <div id="dino-image-slot"></div>
 
     <div class="stats-grid">
       <div class="stat-card">
@@ -80,4 +81,27 @@ export function mount(container, id) {
         </div>
       </div>` : ''}
   `;
+
+  fetchWikipediaImage(dino, container);
+}
+
+function fetchWikipediaImage(dino, container) {
+  const slot = container.querySelector('#dino-image-slot');
+  if (!slot) return;
+
+  const term = encodeURIComponent(dino.nombre.replace(/ /g, '_'));
+  fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${term}`)
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      const src = data?.originalimage?.source || data?.thumbnail?.source;
+      if (!src) return;
+      slot.innerHTML = `
+        <figure class="dino-figure">
+          <img src="${src}" alt="${dino.nombre}" class="dino-image" loading="lazy">
+          <figcaption class="dino-caption">
+            Fuente: Wikipedia · <em>${dino.nombre}</em>
+          </figcaption>
+        </figure>`;
+    })
+    .catch(() => {});
 }
