@@ -240,19 +240,67 @@ ul { list-style: none; }
 }
 .dino-chip:hover { background: var(--accent); color: var(--bg-deep); border-color: var(--accent); }
 
-/* ── Dino image ─────────────────────────────────────── */
-.dino-figure {
-  margin-bottom: 24px; border-radius: var(--radius);
-  overflow: hidden; border: 1px solid var(--border);
-  background: var(--bg-mid);
+/* ── Dino gallery ───────────────────────────────────── */
+.gallery-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
 }
-.dino-image {
-  width: 100%; max-height: 380px;
-  object-fit: cover; display: block;
+.gallery-hint { font-size: 11px; color: var(--text-dim); }
+.gallery-credit {
+  font-size: 10px; color: var(--text-dim);
+  margin-top: 6px; margin-bottom: 24px;
 }
-.dino-caption {
-  font-size: 11px; color: var(--text-dim);
-  padding: 6px 12px; background: rgba(0,0,0,0.3);
+.dino-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 4px;
+}
+.dino-gallery-item {
+  aspect-ratio: 4/3; overflow: hidden;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  cursor: zoom-in; background: var(--bg-mid); margin: 0;
+  transition: border-color var(--transition);
+}
+.dino-gallery-item:hover { border-color: var(--accent); }
+.dino-gallery-item img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform 0.3s ease;
+}
+.dino-gallery-item:hover img { transform: scale(1.05); }
+.dino-gallery-item.featured {
+  grid-column: 1 / -1; aspect-ratio: 16/7;
+}
+
+/* ── Lightbox ───────────────────────────────────────── */
+.lightbox {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,0.93);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: zoom-out;
+  animation: fadeIn 0.15s ease;
+}
+.lightbox img {
+  max-width: 90vw; max-height: 82vh;
+  object-fit: contain; border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  cursor: default;
+}
+.lightbox-caption {
+  font-size: 11px; color: rgba(255,255,255,0.5);
+  margin-top: 10px; text-align: center; max-width: 80vw;
+}
+.lightbox-close {
+  position: absolute; top: 16px; right: 20px;
+  font-size: 22px; color: rgba(255,255,255,0.6);
+  cursor: pointer; background: none; border: none;
+  transition: color var(--transition); line-height: 1;
+}
+.lightbox-close:hover { color: white; }
+
+@media (max-width: 600px) {
+  .dino-gallery { grid-template-columns: repeat(2, 1fr); }
+  .dino-gallery-item.featured { aspect-ratio: 4/3; }
 }
 
 /* ── Dino page ──────────────────────────────────────── */

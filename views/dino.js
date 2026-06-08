@@ -35,30 +35,12 @@ export function mount(container, id) {
     <div id="dino-image-slot"></div>
 
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="label">Longitud</div>
-        <div class="value">${dino.longitud} m</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Peso</div>
-        <div class="value">${formatPeso(dino.peso)}</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Dieta</div>
-        <div class="value">${dino.dieta}</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Período</div>
-        <div class="value">${dino.rangoMa[0]}–${dino.rangoMa[1]} Ma</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Región</div>
-        <div class="value">${dino.region.join(', ')}</div>
-      </div>
-      <div class="stat-card">
-        <div class="label">Descubierto</div>
-        <div class="value">${dino.descubrimiento.año}</div>
-      </div>
+      <div class="stat-card"><div class="label">Longitud</div><div class="value">${dino.longitud} m</div></div>
+      <div class="stat-card"><div class="label">Peso</div><div class="value">${formatPeso(dino.peso)}</div></div>
+      <div class="stat-card"><div class="label">Dieta</div><div class="value">${dino.dieta}</div></div>
+      <div class="stat-card"><div class="label">Período</div><div class="value">${dino.rangoMa[0]}–${dino.rangoMa[1]} Ma</div></div>
+      <div class="stat-card"><div class="label">Región</div><div class="value">${dino.region.join(', ')}</div></div>
+      <div class="stat-card"><div class="label">Descubierto</div><div class="value">${dino.descubrimiento.año}</div></div>
     </div>
 
     <div class="dino-description">
@@ -82,26 +64,85 @@ export function mount(container, id) {
       </div>` : ''}
   `;
 
-  fetchWikipediaImage(dino, container);
+  fetchGallery(dino, container);
 }
 
-function fetchWikipediaImage(dino, container) {
+// ── Wikipedia gallery ────────────────────────────────────────────────────────
+
+const EXCLUDE = /icon|logo|flag|commons|wikidata|wikimedia|button|arrow|star|edit|pictogram|symbol|silhouette/i;
+
+async function fetchGallery(dino, container) {
   const slot = container.querySelector('#dino-image-slot');
   if (!slot) return;
 
-  const term = encodeURIComponent(dino.nombre.replace(/ /g, '_'));
-  fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${term}`)
-    .then(r => r.ok ? r.json() : null)
-    .then(data => {
-      const src = data?.originalimage?.source || data?.thumbnail?.source;
-      if (!src) return;
-      slot.innerHTML = `
-        <figure class="dino-figure">
-          <img src="${src}" alt="${dino.nombre}" class="dino-image" loading="lazy">
-          <figcaption class="dino-caption">
-            Fuente: Wikipedia · <em>${dino.nombre}</em>
-          </figcaption>
-        </figure>`;
-    })
-    .catch(() => {});
+  const title = dino.nombre.replace(/ /g, '_');
+  const api = `https://en.wikipedia.org/w/api.php?action=query` +
+    `&generator=images&titles=${encodeURIComponent(title)}&gimlimit=30` +
+    `&prop=imageinfo&iiprop=url|mime|size|thumbmime&iiurlwidth=1200` +
+    `&format=json&origin=*`;
+
+  try {
+    const res  = await fetch(api);
+    const data = await res.json();
+    const pages = Object.values(data.query?.pages || {});
+
+    const images = pages
+      .filter(p => p.imageinfo?.[0] && !EXCLUDE.test(p.title))
+      .map(p => ({ title: p.title.replace('File:', ''), ...p.imageinfo[0] }))
+      .filter(img =>
+        (img.mime === 'image/jpeg' || img.mime === 'image/png') &&
+        img.size > 20000
+      )
+      .slice(0, 8);
+
+    if (!images.length) return;
+
+    slot.innerHTML = `
+      <div class="gallery-header">
+        <span class="section-title">Galería de imágenes</span>
+        <span class="gallery-hint">Toca para ampliar</span>
+      </div>
+      <div class="dino-gallery">
+        ${images.map((img, i) => `
+          <figure class="dino-gallery-item ${i === 0 ? 'featured' : ''}"
+                  data-full="${img.url}"
+                  data-caption="${img.title}">
+            <img src="${img.thumburl || img.url}"
+                 alt="${img.title}" loading="lazy">
+          </figure>`).join('')}
+      </div>
+      <p class="gallery-credit">Imágenes vía Wikipedia · Wikimedia Commons</p>
+    `;
+
+    initLightbox(slot);
+
+  } catch (_) {}
+}
+
+// ── Lightbox ─────────────────────────────────────────────────────────────────
+
+function initLightbox(root) {
+  root.querySelectorAll('.dino-gallery-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const src     = item.dataset.full;
+      const caption = item.dataset.caption;
+
+      const lb = document.createElement('div');
+      lb.className = 'lightbox';
+      lb.innerHTML = `
+        <button class="lightbox-close" aria-label="Cerrar">✕</button>
+        <img src="${src}" alt="${caption}">
+        <p class="lightbox-caption">${caption}</p>
+      `;
+
+      const close = () => lb.remove();
+      lb.querySelector('.lightbox-close').addEventListener('click', close);
+      lb.addEventListener('click', e => { if (e.target === lb) close(); });
+
+      const onKey = e => { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); } };
+      document.addEventListener('keydown', onKey);
+
+      document.body.appendChild(lb);
+    });
+  });
 }
