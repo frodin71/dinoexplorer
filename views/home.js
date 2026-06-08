@@ -1,4 +1,4 @@
-import { getDinoById, DINOS, GRUPOS } from '../data.js';
+import { getDinoById, DINOS } from '../data.js';
 
 const FEATURED = [
   'tyrannosaurus-rex', 'triceratops', 'brachiosaurus', 'velociraptor',

@@ -121,7 +121,7 @@ function initTimeline(container) {
   timeline.addEventListener('click', e => {
     const header = e.target.closest('.period-header');
     if (!header) return;
-    const body  = document.getElementById(`pb-${header.dataset.period}`);
+    const body  = container.querySelector(`#pb-${header.dataset.period}`);
     const arrow = header.querySelector('.period-arrow');
     if (!body) return;
     const open = body.classList.toggle('expanded');
